@@ -1,0 +1,9 @@
+node_modules
+gen
+mta_archives
+*.mtar
+.git
+.github
+.env
+test
+docs

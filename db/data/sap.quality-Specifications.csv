@@ -1,0 +1,12 @@
+material_ID;characteristic;description;unit;lowerLimit;upperLimit;target;method
+BAR-4CR13-10;C_PCT;Carbon content;%;0.36;0.45;0.4;Mill certificate 3.1 + spark OES check
+BAR-4CR13-10;CR_PCT;Chromium content;%;12;14;13;Mill certificate 3.1 + spark OES check
+AX-4CR13-080;HV10;Vickers hardness HV10;HV10;450;650;560;Vickers HV10 (ISO 6507-1 method), 5 parts per lot
+AX-4CR13-080;BEND_F;Bending force at break;N;4000;6000;4600;3-point bending, 5 parts per lot
+AX-4CR13-080;DIAM;Bearing seat diameter;mm;7.98;8.02;8;Laser micrometer, 5 parts per lot
+AX-4CR13-078;HV10;Vickers hardness HV10;HV10;450;650;560;Vickers HV10 (ISO 6507-1 method), 5 parts per lot
+AX-4CR13-078;BEND_F;Bending force at break;N;3800;5800;4400;3-point bending, 5 parts per lot
+AX-4CR13-078;DIAM;Bearing seat diameter;mm;7.78;7.82;7.8;Laser micrometer, 5 parts per lot
+HSG-AC44300;SI_PCT;Silicon content;%;10.5;13.5;12;Spark OES per melt
+HSG-AC44300;POROSITY;Porosity area in X-ray zone A;%;0;1.5;0.5;X-ray, zone A evaluation
+HSG-AC44300;WALL_MM;Wall thickness at flange;mm;3.4;3.8;3.6;Ultrasonic thickness gauge

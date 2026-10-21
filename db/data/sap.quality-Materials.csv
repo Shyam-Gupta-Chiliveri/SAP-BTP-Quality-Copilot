@@ -1,0 +1,5 @@
+ID;description;materialType;baseUnit;alloy;plant_ID
+BAR-4CR13-10;Round bar 4Cr13, 10 mm, annealed;ROH;KG;4Cr13 (X40Cr13);DE10
+AX-4CR13-080;Drive axle 8.00 mm, 4Cr13, hardened and tempered;HALB;PC;4Cr13 (X40Cr13);DE10
+AX-4CR13-078;Drive axle 7.80 mm, 4Cr13, hardened and tempered;HALB;PC;4Cr13 (X40Cr13);DE10
+HSG-AC44300;Motor housing, high-pressure die cast;HALB;PC;EN AC-44300 (AlSi12Fe);DE10

@@ -1,0 +1,51 @@
+_schema-version: '3.1'
+ID: sap-btp-quality-copilot
+version: 1.0.0
+description: Quality Copilot - SAP CAP service with agentic RAG over S/4HANA-shaped QM data
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  - name: quality-copilot-srv
+    type: nodejs
+    path: .
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      disk-quota: 512M
+      command: npx --no-install cds-serve
+      health-check-type: http
+      health-check-http-endpoint: /health
+    properties:
+      NODE_ENV: production
+    build-parameters:
+      builder: custom
+      commands:
+        - node scripts/generate-data.js
+      ignore:
+        - node_modules/
+        - gen/
+        - test/
+        - mta_archives/
+        - .git/
+        - .github/
+        - .env
+        - '*.mtar'
+    requires:
+      - name: quality-copilot-aicore
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+
+resources:
+  # Inactive by default: the BTP trial has no AI Core. Activate with
+  #   cf deploy mta_archives/*.mtar -e mta-aicore.mtaext
+  # on an account with the AI Core "extended" plan (Generative AI Hub).
+  - name: quality-copilot-aicore
+    type: org.cloudfoundry.managed-service
+    active: false
+    parameters:
+      service: aicore
+      service-plan: extended

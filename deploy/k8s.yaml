@@ -1,0 +1,58 @@
+# Live demo on a single-node k3s cluster (Oracle Cloud Always Free, Frankfurt).
+# Image is built on the node and imported into containerd, so no registry is needed.
+# GROQ_API_KEY comes from the existing "groq" secret; it is optional.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-copilot
+  namespace: materials
+  labels: { app: quality-copilot }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: quality-copilot }
+  template:
+    metadata:
+      labels: { app: quality-copilot }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: app
+          image: docker.io/library/quality-copilot:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef: { name: groq, key: GROQ_API_KEY, optional: true }
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quality-copilot
+  namespace: materials
+spec:
+  type: NodePort
+  selector: { app: quality-copilot }
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30084

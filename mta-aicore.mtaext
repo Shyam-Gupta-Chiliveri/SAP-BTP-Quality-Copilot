@@ -1,0 +1,12 @@
+_schema-version: '3.1'
+ID: sap-btp-quality-copilot.aicore
+extends: sap-btp-quality-copilot
+
+modules:
+  - name: quality-copilot-srv
+    properties:
+      AICORE_MODEL: gpt-4.1-mini
+
+resources:
+  - name: quality-copilot-aicore
+    active: true

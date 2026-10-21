@@ -1,0 +1,41 @@
+{
+  "name": "sap-btp-quality-copilot",
+  "version": "1.0.0",
+  "description": "SAP CAP quality copilot: agentic RAG over S/4HANA-shaped quality and supply-chain data, Generative AI Hub ready.",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "data": "node scripts/generate-data.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "build": "cds build --production"
+  },
+  "dependencies": {
+    "@cap-js/sqlite": "^3",
+    "@sap-ai-sdk/orchestration": "^2.16.0",
+    "@sap/cds": "^10",
+    "express": "^5"
+  },
+  "devDependencies": {
+    "@cap-js/cds-test": "^1.0.2",
+    "@sap/cds-dk": "^10"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "auth": "mocked"
+    },
+    "fiori": {
+      "preview": true
+    }
+  }
+}
