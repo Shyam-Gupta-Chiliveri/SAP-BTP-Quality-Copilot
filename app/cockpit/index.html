@@ -1,320 +1,54 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Quality Copilot - SAP CAP on BTP</title>
-  <meta name="description" content="Agentic RAG over S/4HANA-shaped quality and supply-chain data. SAP CAP service, Generative AI Hub ready, with a Joule-style assistant.">
-  <meta property="og:title" content="Quality Copilot - SAP CAP + Generative AI Hub">
-  <meta property="og:description" content="Ask about inspection lots, Cpk, supplier scorecards and Q-notifications. Router, CQL tools, BM25 RAG, critic release gate.">
-  <style>
-    :root {
-      --bg: #f5f6f7; --card: #fff; --text: #1d2d3e; --muted: #556b82; --line: #d9d9d9;
-      --brand: #0070f2; --brand-dark: #0040b0; --shell: #fff;
-      --pos: #256f3a; --pos-bg: #f5fae5; --crit: #aa5c00; --crit-bg: #fff8d6; --neg: #aa0808; --neg-bg: #ffeaf4; --info-bg: #e1f4ff;
-      --joule1: #5d36ff; --joule2: #0070f2;
-      --radius: 12px; --shadow: 0 0 2px rgba(34,53,72,.15), 0 2px 4px rgba(34,53,72,.15);
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "72", "72full", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
-    header.shell { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 0 16px; height: 52px; background: var(--shell); box-shadow: 0 1px 0 var(--line); }
-    .logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--joule2), var(--joule1)); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; }
-    .shell h1 { font-size: 16px; margin: 0; font-weight: 700; }
-    .shell .sub { color: var(--muted); font-size: 13px; }
-    .shell .spacer { flex: 1; }
-    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--info-bg); color: var(--brand-dark); white-space: nowrap; }
-    .chip.pos { background: var(--pos-bg); color: var(--pos); }
-    .chip.crit { background: var(--crit-bg); color: var(--crit); }
-    .chip.neg { background: var(--neg-bg); color: var(--neg); }
-    .btn { border: 1px solid var(--brand); background: var(--brand); color: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-    .btn.ghost { background: transparent; color: var(--brand); }
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; padding: 16px; max-width: 1560px; margin: 0 auto; }
-    .page-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 4px 2px 12px; }
-    .page-title h2 { margin: 0; font-size: 20px; }
-    .page-title p { margin: 0; color: var(--muted); }
-    .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .tile { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; min-height: 108px; }
-    .tile .label { color: var(--muted); font-size: 13px; }
-    .tile .value { font-size: 34px; font-weight: 300; margin: 6px 0 2px; }
-    .tile .value small { font-size: 16px; color: var(--muted); }
-    .tile .hint { font-size: 12px; color: var(--muted); }
-    .tile.Error .value { color: var(--neg); } .tile.Critical .value { color: var(--crit); } .tile.Success .value { color: var(--pos); }
-    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
-    .card h3 { margin: 0; padding: 14px 16px 10px; font-size: 15px; display: flex; align-items: center; gap: 10px; }
-    .card h3 .muted { font-weight: 400; color: var(--muted); font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px 16px; border-top: 1px solid #eee; font-size: 13px; vertical-align: top; }
-    th { color: var(--muted); font-weight: 400; background: #fafbfc; }
-    tr.click { cursor: pointer; } tr.click:hover { background: #f0f7ff; }
-    .rating { display: inline-block; width: 24px; text-align: center; border-radius: 6px; font-weight: 700; }
-    .rating.A { background: var(--pos-bg); color: var(--pos); } .rating.B { background: var(--crit-bg); color: var(--crit); } .rating.C { background: var(--neg-bg); color: var(--neg); }
-    .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
-    .chart { padding: 0 12px 10px; }
-    .chart svg { width: 100%; height: 230px; display: block; }
-    .legend { display: flex; gap: 14px; padding: 0 16px 12px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
-    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
-    footer { color: var(--muted); font-size: 12px; padding: 4px 2px 20px; line-height: 1.6; }
-    footer a { color: var(--brand); }
-
-    /* Joule-style assistant panel */
-    aside.joule { position: sticky; top: 68px; height: calc(100vh - 84px); display: flex; flex-direction: column; background: var(--card); border-radius: 16px; box-shadow: 0 0 2px rgba(34,53,72,.2), 0 8px 24px rgba(34,53,72,.18); overflow: hidden; }
-    .jhead { padding: 14px 16px; color: #fff; background: linear-gradient(120deg, var(--joule1), var(--joule2)); }
-    .jhead .t { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
-    .jhead .d { opacity: .9; font-size: 12px; margin-top: 4px; }
-    .spark { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.2); display: grid; place-items: center; }
-    .msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: #fbfbfd; }
-    .msg { max-width: 100%; border-radius: 14px; padding: 10px 12px; line-height: 1.5; font-size: 13.5px; }
-    .msg.user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; max-width: 85%; }
-    .msg.bot { align-self: stretch; background: #fff; box-shadow: var(--shadow); border-bottom-left-radius: 4px; }
-    .msg.bot ul { margin: 6px 0; padding-left: 18px; } .msg.bot li { margin: 3px 0; }
-    .msg.bot p { margin: 4px 0; }
-    .ref { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 5px; background: var(--info-bg); color: var(--brand-dark); white-space: nowrap; margin: 0 1px; }
-    .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    details { margin-top: 8px; border-top: 1px solid #eee; padding-top: 6px; }
-    summary { cursor: pointer; color: var(--brand); font-size: 12.5px; }
-    .steps { list-style: none; padding: 0; margin: 8px 0 0; }
-    .steps li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; font-size: 12px; margin-bottom: 6px; color: var(--text); }
-    .steps .n { width: 18px; height: 18px; border-radius: 50%; background: var(--info-bg); color: var(--brand-dark); font-size: 10px; display: grid; place-items: center; }
-    .steps b { font-weight: 600; } .steps .tool { color: var(--muted); }
-    .cites { font-size: 12px; margin: 6px 0 0; padding-left: 16px; color: var(--muted); }
-    .cites b { color: var(--text); font-weight: 600; }
-    .suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 0; background: #fff; border-top: 1px solid #eee; }
-    .suggest button { border: 1px solid #c9d7ff; background: #f3f6ff; color: #3d2fd1; border-radius: 999px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; }
-    .suggest button:hover { background: #e6ecff; }
-    form.ask { display: flex; gap: 8px; padding: 10px 14px 14px; background: #fff; }
-    form.ask input { flex: 1; border: 1px solid #b8c2cc; border-radius: 10px; padding: 10px 12px; font: inherit; }
-    form.ask input:focus { outline: 2px solid var(--brand); border-color: transparent; }
-    .typing { color: var(--muted); font-size: 12.5px; }
-    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } aside.joule { position: static; height: 720px; } .tiles { grid-template-columns: repeat(2, 1fr); } .grid2 { grid-template-columns: 1fr; } }
-    @media (max-width: 560px) { .shell .sub { display: none; } .tiles { grid-template-columns: 1fr 1fr; } th:nth-child(n+5), td:nth-child(n+5) { display: none; } }
-  </style>
+  <title>SAP Business AI Architect Workbench</title>
+  <meta name="description" content="From Phase 0 to production: S/4HANA transition assessment, effort estimate and proposal, Business AI portfolio, reference architecture on BTP, and a live Joule-style quality copilot built on SAP CAP and the Generative AI Hub.">
+  <meta property="og:title" content="SAP Business AI Architect Workbench">
+  <meta property="og:description" content="Phase 0 assessment, estimator, proposal, Business AI portfolio, BTP reference architecture and a live CAP + Gen AI Hub quality copilot.">
+  <link rel="stylesheet" href="workbench.css">
+  <script>document.documentElement.dataset.theme = localStorage.getItem('wb-theme') || 'dark'</script>
 </head>
 <body>
-  <header class="shell">
-    <div class="logo">QC</div>
-    <div>
-      <h1>Quality Copilot</h1>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="mark"><span>AI</span></div>
+      <div><b>Business AI Workbench</b><small>SAP BTP &middot; CAP &middot; Gen AI Hub</small></div>
     </div>
-    <div class="sub">Plant DE10 &middot; S/4HANA QM &amp; MM data model &middot; SAP CAP service</div>
-    <div class="spacer"></div>
-    <span class="chip" id="providerChip" title="Which LLM writes answers">LLM: checking...</span>
-  </header>
+    <nav class="nav" id="nav">
+      <div class="group">Start</div>
+      <a href="#/overview" data-view="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Overview</a>
+      <div class="group">Transform</div>
+      <a href="#/assessment" data-view="assessment"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Phase 0 Assessment</a>
+      <a href="#/architecture" data-view="architecture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="5" rx="1.5"/><rect x="3" y="10" width="18" height="5" rx="1.5"/><rect x="3" y="17" width="18" height="4" rx="1.5"/></svg>Reference Architecture</a>
+      <a href="#/estimate" data-view="estimate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>Estimate &amp; Proposal</a>
+      <div class="group">Business AI</div>
+      <a href="#/portfolio" data-view="portfolio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 4"/></svg>AI Portfolio</a>
+      <a href="#/copilot" data-view="copilot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>Quality Copilot <span class="chip pos" style="margin-left:auto">Live</span></a>
+      <a href="#/analytics" data-view="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Analytics (Datasphere-ready)</a>
+      <a href="#/governance" data-view="governance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>AI Governance</a>
+    </nav>
+    <div class="foot">
+      <div class="row"><span id="providerLine">LLM: checking</span></div>
+      <div class="row"><button class="toggle" id="themeBtn" type="button">Light theme</button><a href="https://github.com/Shyam-Gupta-Chiliveri/SAP-BTP-Quality-Copilot" target="_blank" rel="noopener">GitHub</a></div>
+    </div>
+  </aside>
 
-  <div class="layout">
-    <main>
-      <div class="page-title">
-        <h2>Supplier quality overview</h2>
-        <p>Goods receipt inspection lots, Feb to Sep 2026. Fictional demo data in the S/4HANA QM shape.</p>
+  <div class="main">
+    <header class="top">
+      <button class="toggle menu-btn" id="menuBtn" type="button" aria-label="Menu">Menu</button>
+      <div>
+        <div class="crumb" id="crumb">Workbench</div>
+        <h1 id="title">Overview</h1>
       </div>
-
-      <section class="tiles" id="tiles"></section>
-
-      <div class="grid2">
-        <section class="card">
-          <h3>HV10 control chart, AX-4CR13-080 <span class="muted">lot means, limits 450 to 650</span></h3>
-          <div class="chart" id="chart"></div>
-          <div class="legend">
-            <span><span class="dot" style="background:#0070f2"></span>Accepted lot</span>
-            <span><span class="dot" style="background:#aa0808"></span>Rejected lot (usage decision R)</span>
-            <span><span class="dot" style="background:#e9730c"></span>Spec limit</span>
-          </div>
-        </section>
-        <section class="card">
-          <h3>Supplier scorecards <span class="muted">click a row to ask</span></h3>
-          <table id="scorecards"><thead><tr><th>Supplier</th><th>Lots</th><th>Reject rate</th><th>PPM</th><th>Open Q2</th><th>Rating</th></tr></thead><tbody></tbody></table>
-        </section>
-      </div>
-
-      <section class="card">
-        <h3>Quality notifications <span class="muted">Q1 customer, Q2 vendor, Q3 internal &middot; click a row to ask</span></h3>
-        <table id="notes"><thead><tr><th>Notification</th><th>Type</th><th>Status</th><th>Supplier</th><th>Material</th><th>Created</th><th>Defect</th></tr></thead><tbody></tbody></table>
-      </section>
-
-      <footer>
-        Built with SAP Cloud Application Programming Model (CAP, Node.js) &middot; OData V4 service <a href="/odata/v4/quality/$metadata" target="_blank" rel="noopener">$metadata</a>
-        &middot; <a href="/$fiori-preview/QualityService/QualityNotifications#preview-app" target="_blank" rel="noopener">Fiori elements preview</a>
-        &middot; <a href="https://github.com/shyam-gupta-chiliveri/SAP-BTP-Quality-Copilot" target="_blank" rel="noopener">Source on GitHub</a><br>
-        Synthesizer chain: SAP AI Core Generative AI Hub (when an AI Core binding or key is present) &rarr; Groq &rarr; deterministic composer. The critic checks every number in the answer against the retrieved facts.
-        All companies, lots and notifications are fictional.
-      </footer>
-    </main>
-
-    <aside class="joule" aria-label="Quality assistant">
-      <div class="jhead">
-        <div class="t"><span class="spark">&#10022;</span> Quality assistant</div>
-        <div class="d">Joule-style copilot. Answers come only from inspection lots, notifications and plant procedures.</div>
-      </div>
-      <div class="msgs" id="msgs">
-        <div class="msg bot">
-          <p><b>Hello. I can check release decisions, capability (Cpk), supplier scorecards and root causes.</b></p>
-          <p>Each answer shows the agents that ran, the sources used and the critic's check.</p>
-        </div>
-      </div>
-      <div class="suggest" id="suggest"></div>
-      <form class="ask" id="askForm">
-        <input id="q" maxlength="1000" autocomplete="off" placeholder="Ask about lots, suppliers, Cpk, notifications..." aria-label="Question">
-        <button class="btn" type="submit">Ask</button>
-      </form>
-    </aside>
+      <div class="spacer"></div>
+      <span class="live"><i></i>Live on SAP CAP</span>
+    </header>
+    <section class="view" id="view"></section>
   </div>
-
-<script>
-const API = '/odata/v4/quality'
-const SUGGESTIONS = [
-  'Can we release AX-4CR13-080 from V200 now?',
-  'Why did HV10 drift in July and August?',
-  'Which supplier is worst and why?',
-  'Is the porosity problem at AluGuss solved?',
-  'Show lot 010000004061',
-  'Tell me about 200001012',
-]
-
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-
-function md(text) {
-  const inline = (s) => esc(s)
-    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:]|$)/g, '$1<i>$2</i>')
-    .replace(/\[((?:QM|SPEC|SUP|LOT|DOC|TREND|QM list)[^\]]*)\]/g, '<span class="ref">$1</span>')
-  const out = []
-  let list = null
-  for (const raw of String(text).split('\n')) {
-    const line = raw.trim()
-    if (!line) { if (list) { out.push(`<ul>${list.join('')}</ul>`); list = null } continue }
-    const m = line.match(/^(?:[-*\u2022]|\d+[.)])\s+(.*)$/)
-    if (m) { (list ||= []).push(`<li>${inline(m[1])}</li>`); continue }
-    if (list) { out.push(`<ul>${list.join('')}</ul>`); list = null }
-    out.push(`<p>${inline(line)}</p>`)
-  }
-  if (list) out.push(`<ul>${list.join('')}</ul>`)
-  return out.join('')
-}
-
-async function getJSON(url) {
-  const r = await fetch(url)
-  if (!r.ok) throw new Error(`${r.status} ${url}`)
-  return r.json()
-}
-
-async function loadTiles() {
-  const { value } = await getJSON(`${API}/cockpit()`)
-  document.getElementById('tiles').innerHTML = value.map((k) => `
-    <div class="tile ${esc(k.state)}"><div class="label">${esc(k.label)}</div>
-    <div class="value">${esc(k.value)}<small>${k.unit ? ' ' + esc(k.unit) : ''}</small></div><div class="hint">${esc(k.hint)}</div></div>`).join('')
-}
-
-async function loadScorecards() {
-  const { value } = await getJSON(`${API}/scorecards()`)
-  const tb = document.querySelector('#scorecards tbody')
-  tb.innerHTML = value.map((s) => `<tr class="click" data-q="${esc(`How is ${s.supplier} ${s.name} performing and why?`)}">
-    <td><b>${esc(s.supplier)}</b> ${esc(s.name)}<br><span style="color:var(--muted);font-size:12px">${esc(s.category)}</span></td>
-    <td>${s.lots} (${s.rejectedLots} R)</td><td>${Number(s.lotRejectRate).toFixed(1)} %</td><td>${s.defectPpm}</td><td>${s.openQ2}</td>
-    <td><span class="rating ${esc(s.rating)}">${esc(s.rating)}</span></td></tr>`).join('')
-}
-
-async function loadNotes() {
-  const { value } = await getJSON(`${API}/QualityNotifications?$orderby=createdOn desc&$select=ID,type,status,supplier_ID,material_ID,createdOn,defectText`)
-  const tb = document.querySelector('#notes tbody')
-  tb.innerHTML = value.map((n) => {
-    const st = n.status === 'Completed' ? 'pos' : 'crit'
-    const ty = n.type === 'Q1' ? 'neg' : n.type === 'Q2' ? 'crit' : ''
-    return `<tr class="click" data-q="${esc(`Tell me about ${n.ID}`)}"><td><b>${esc(n.ID)}</b></td><td><span class="chip ${ty}">${esc(n.type)}</span></td>
-      <td><span class="chip ${st}">${esc(n.status)}</span></td><td>${esc(n.supplier_ID || '-')}</td><td>${esc(n.material_ID)}</td><td>${esc(n.createdOn)}</td><td>${esc(n.defectText)}</td></tr>`
-  }).join('')
-}
-
-async function loadChart() {
-  const filter = encodeURIComponent("characteristic eq 'HV10' and lot/material_ID eq 'AX-4CR13-080'")
-  const { value } = await getJSON(`${API}/InspectionResults?$filter=${filter}&$select=lot_ID,mean,valuation&$expand=lot($select=createdOn,batch)`)
-  const pts = value.map((v) => ({ d: v.lot.createdOn, y: Number(v.mean), r: v.valuation === 'R', id: v.lot_ID, b: v.lot.batch })).sort((a, b) => a.d.localeCompare(b.d))
-  const W = 640, H = 230, L = 40, R = 10, T = 12, B = 26
-  const y0 = 420, y1 = 720
-  const t0 = new Date(pts[0].d).getTime(), t1 = new Date(pts[pts.length - 1].d).getTime()
-  const X = (d) => L + ((new Date(d).getTime() - t0) / (t1 - t0)) * (W - L - R)
-  const Y = (y) => T + (1 - (y - y0) / (y1 - y0)) * (H - T - B)
-  const months = ['2026-02-01','2026-03-01','2026-04-01','2026-05-01','2026-06-01','2026-07-01','2026-08-01','2026-09-01']
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="HV10 lot means over time">`
-  for (const g of [450, 500, 550, 600, 650, 700]) s += `<line x1="${L}" x2="${W - R}" y1="${Y(g)}" y2="${Y(g)}" stroke="#eee"/><text x="${L - 6}" y="${Y(g) + 4}" font-size="10" text-anchor="end" fill="#556b82">${g}</text>`
-  for (const m of months) { const x = X(m); if (x >= L) s += `<text x="${x}" y="${H - 8}" font-size="10" fill="#556b82">${m.slice(5, 7)}/26</text>` }
-  s += `<rect x="${X('2026-07-06')}" y="${T}" width="${X('2026-08-21') - X('2026-07-06')}" height="${H - T - B}" fill="#fff3e6" />`
-  s += `<text x="${X('2026-07-06') + 4}" y="${T + 12}" font-size="10" fill="#aa5c00">furnace TO-3 drift</text>`
-  for (const lim of [450, 650]) s += `<line x1="${L}" x2="${W - R}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="#e9730c" stroke-dasharray="5 4" stroke-width="1.5"/>`
-  s += `<polyline fill="none" stroke="#9fc4f7" stroke-width="1.2" points="${pts.map((p) => `${X(p.d).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')}"/>`
-  for (const p of pts) s += `<circle cx="${X(p.d).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.r ? 4.5 : 3}" fill="${p.r ? '#aa0808' : '#0070f2'}" data-q="Show lot ${p.id}" style="cursor:pointer"><title>${p.id} ${p.b} ${p.d}: ${p.y} HV10${p.r ? ' (rejected)' : ''}</title></circle>`
-  s += '</svg>'
-  document.getElementById('chart').innerHTML = s
-}
-
-async function loadProvider() {
-  try {
-    const p = await getJSON(`${API}/providerInfo()`)
-    const chip = document.getElementById('providerChip')
-    chip.textContent = `LLM: ${p.provider}${p.model && p.model !== 'rules' ? ' (' + p.model + ')' : ''}`
-    chip.className = 'chip ' + (p.provider.startsWith('SAP') ? 'pos' : p.provider === 'Groq' ? '' : 'crit')
-  } catch { /* chip stays neutral */ }
-}
-
-function addMsg(html, cls) {
-  const box = document.getElementById('msgs')
-  const el = document.createElement('div')
-  el.className = `msg ${cls}`
-  el.innerHTML = html
-  box.appendChild(el)
-  box.scrollTop = box.scrollHeight
-  return el
-}
-
-function renderAnswer(d) {
-  const c = d.critic || {}
-  const verdict = c.verdict === 'pass' ? `<span class="chip pos">Critic: grounded</span>`
-    : c.verdict === 'revised' ? `<span class="chip crit" title="Ungrounded: ${esc((c.ungrounded || []).join(', '))}">Critic: LLM answer replaced</span>`
-    : `<span class="chip neg">Critic: blocked</span>`
-  const release = c.releaseAllowed === true ? `<span class="chip pos">Release allowed: ${esc(c.releaseScope)}</span>`
-    : c.releaseAllowed === false ? `<span class="chip neg">Do not release: ${esc(c.releaseScope)}</span>` : ''
-  const provider = `<span class="chip">${esc(d.provider)}${d.model && d.model !== 'rules' ? ' &middot; ' + esc(d.model) : ''}</span>`
-  const total = (d.steps || []).reduce((a, s) => a + (s.ms || 0), 0)
-  const steps = (d.steps || []).map((s, i) => `<li><span class="n">${i + 1}</span><span><b>${esc(s.agent)}</b> <span class="tool">${esc(s.tool)} &middot; ${s.ms} ms</span><br>${esc(s.summary)}</span></li>`).join('')
-  const cites = (d.citations || []).map((x) => `<li><b>${esc(x.ref)}</b> ${esc(x.title)} <i>(${esc(x.kind)})</i></li>`).join('')
-  const reasons = (c.reasons || []).length ? `<p style="font-size:12px;color:var(--muted);margin:6px 0 0">Gate: ${(c.reasons || []).map(esc).join('<br>')}</p>` : ''
-  return `${md(d.answer)}<div class="meta">${release}${verdict}${provider}</div>
-    <details><summary>How I got this: ${(d.steps || []).length} steps, ${total} ms</summary><ul class="steps">${steps}</ul>${reasons}</details>
-    ${cites ? `<details><summary>Sources (${(d.citations || []).length})</summary><ul class="cites">${cites}</ul></details>` : ''}`
-}
-
-let busy = false
-async function ask(question) {
-  question = question.trim()
-  if (!question || busy) return
-  busy = true
-  addMsg(esc(question), 'user')
-  const wait = addMsg('<span class="typing">Routing question, querying S/4HANA entities, retrieving procedures...</span>', 'bot')
-  try {
-    const r = await fetch(`${API}/ask`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question }) })
-    const d = await r.json()
-    if (!r.ok) throw new Error(d.error?.message || `HTTP ${r.status}`)
-    wait.innerHTML = renderAnswer(d)
-  } catch (e) {
-    wait.innerHTML = `<p>Sorry, the request failed: ${esc(e.message)}</p>`
-  } finally {
-    busy = false
-    document.getElementById('msgs').scrollTop = 1e9
-  }
-}
-
-document.getElementById('suggest').innerHTML = SUGGESTIONS.map((s) => `<button type="button" data-q="${esc(s)}">${esc(s)}</button>`).join('')
-document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-q]')
-  if (el) ask(el.getAttribute('data-q'))
-})
-document.getElementById('askForm').addEventListener('submit', (e) => {
-  e.preventDefault()
-  const input = document.getElementById('q')
-  ask(input.value)
-  input.value = ''
-})
-
-Promise.allSettled([loadTiles(), loadScorecards(), loadNotes(), loadChart(), loadProvider()])
-  .then((r) => r.filter((x) => x.status === 'rejected').forEach((x) => console.error(x.reason)))
-</script>
+</div>
+<script src="workbench.js"></script>
 </body>
 </html>

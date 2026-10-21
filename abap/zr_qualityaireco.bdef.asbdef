@@ -1,0 +1,40 @@
+managed implementation in class zbp_r_qualityaireco unique;
+strict ( 2 );
+
+define behavior for ZR_QualityAIReco alias Reco
+persistent table zqai_reco
+lock master
+authorization master ( instance )
+etag master LocalLastChangedAt
+{
+  create;
+  update;
+  delete;
+
+  field ( numbering : managed, readonly ) RecoUUID;
+  field ( readonly ) Status, Provider, CreatedBy, CreatedAt, LastChangedBy, LastChangedAt, LocalLastChangedAt;
+  field ( mandatory ) InspectionLot, Recommendation;
+
+  action ( features : instance ) approve result [1] $self;
+  action ( features : instance ) reject result [1] $self;
+
+  determination setInitialStatus on modify { create; }
+  validation validateRecommendation on save { create; field Recommendation; }
+
+  mapping for zqai_reco
+  {
+    RecoUUID           = reco_uuid;
+    InspectionLot      = inspection_lot;
+    Material           = material;
+    Supplier           = supplier;
+    Recommendation     = recommendation;
+    Rationale          = rationale;
+    Provider           = provider;
+    Status             = status;
+    CreatedBy          = created_by;
+    CreatedAt          = created_at;
+    LastChangedBy      = last_changed_by;
+    LastChangedAt      = last_changed_at;
+    LocalLastChangedAt = local_last_changed_at;
+  }
+}

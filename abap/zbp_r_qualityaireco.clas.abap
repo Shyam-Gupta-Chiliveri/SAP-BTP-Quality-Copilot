@@ -1,0 +1,5 @@
+CLASS zbp_r_qualityaireco DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zr_qualityaireco.
+ENDCLASS.
+
+CLASS zbp_r_qualityaireco IMPLEMENTATION.
+ENDCLASS.

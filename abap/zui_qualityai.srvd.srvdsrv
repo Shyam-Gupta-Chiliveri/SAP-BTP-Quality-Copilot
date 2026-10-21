@@ -1,0 +1,4 @@
+@EndUserText.label: 'Quality AI recommendations - UI service'
+define service ZUI_QUALITYAI {
+  expose ZC_QualityAIReco as Recommendation;
+}

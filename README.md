@@ -1,9 +1,27 @@
-# Quality Copilot: SAP CAP + Generative AI Hub agentic RAG
+# SAP Business AI Architect Workbench, with a live Quality Copilot on CAP
 
 **Live demo:** https://quality.138.2.179.154.sslip.io
 
-A Joule-style quality assistant built as an **SAP Cloud Application Programming Model (CAP)** service.
-It answers supplier-quality questions over **S/4HANA-shaped QM and MM data** (inspection lots,
+A workspace for the SAP Business AI architect's job, built on the **SAP Cloud Application Programming Model (CAP)**.
+It runs one engagement from Phase 0 to a governed AI use case:
+
+| View | What it does | Built with |
+|---|---|---|
+| Phase 0 assessment | Recommends Greenfield, Brownfield or Hybrid (selective data transition) from weighted, explainable rules and hard constraints; scores clean core and AI readiness; plans the toolchain (Readiness Check, Signavio, Cloud ALM, ATC, SUM/DMO, Migration Cockpit), the RISE with SAP scope, the BW to Datasphere / Business Data Cloud path and an SAP Activate roadmap | `ArchitectService.assess` |
+| Reference architecture | RISE, BTP, CAP, RAP, Business Data Cloud, Datasphere, Joule, AI Core, security. Every block is labelled **Live**, **Code artifact** or **Target** | `architecture()` |
+| Estimate and proposal | Driver-based ROM effort, team, duration and cost range. The proposal's executive summary is written by the LLM and checked by the same grounding critic as the copilot; download as Markdown or print to PDF | `estimate`, `proposal` |
+| Business AI portfolio | Embedded AI, Joule, Premium AI and custom AI on BTP, ranked by value and feasibility; ticked use cases flow into the estimate | `portfolio()` |
+| Quality Copilot (live) | Agentic RAG over S/4HANA-shaped QM data, described below | `QualityService.ask` |
+| Analytics | Analytical OData model with `$apply`, annotated for Datasphere / SAP Analytics Cloud | `AnalyticsService` |
+| AI governance | Live audit trail, critic acceptance rate, blocked injections, latency, and a one-click red-team check through the real pipeline | `governance()` |
+
+Clean-core extension on-stack is shown as a **managed RAP business object** for AI recommendations with
+approve / reject actions (`abap/`, not compiled here). The Joule Studio skill and the Datasphere / BDC mapping are
+designed in `docs/`. All estimates are rough-order-of-magnitude rules for discussion, not a sizing tool.
+
+## Quality Copilot
+
+A Joule-style quality assistant. It answers supplier-quality questions over **S/4HANA-shaped QM and MM data** (inspection lots,
 usage decisions, Q1/Q2/Q3 notifications, purchase orders) and plant procedures. Each answer is
 backed by data, cites its sources, and passes a critic before it is shown.
 
@@ -69,8 +87,8 @@ The procedures in `knowledge/` were written for this demo. They reference test m
 
 ```bash
 npm ci
-npm run watch          # or: npm start   ->  http://localhost:4004
-npm test               # 19 tests (router, critic, retriever, OData service, ask action)
+npm run watch          # or: npm start   ->  http://localhost:4004/cockpit/
+npm test               # 28 tests (agent, OData services, assessment, estimator, proposal, analytics, governance)
 ```
 
 To have an LLM write the answers, set `GROQ_API_KEY`, or set `AICORE_SERVICE_KEY` (the JSON service key of an SAP AI Core instance) to use the Generative AI Hub. Without a key, the deterministic composer answers from the same facts.
