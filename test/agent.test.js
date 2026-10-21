@@ -44,6 +44,7 @@ test('grounding accepts numbers from facts, including rounding and thousands sep
   const facts = ['Cpk 1.66, defect PPM 115970, mean 564.8 [SPEC X]']
   assert.equal(grounding('Cpk is 1.66 and PPM 115 970, mean 565', facts).grounded, true)
   assert.equal(grounding('Cpk is 1.7', facts).grounded, true)
+  assert.equal(grounding('about EUR 2,483k to 4 139k', ['cost EUR 2,483k to EUR 4,139k']).grounded, true)
 })
 
 test('grounding rejects invented numbers but ignores IDs, dates and small counts', () => {

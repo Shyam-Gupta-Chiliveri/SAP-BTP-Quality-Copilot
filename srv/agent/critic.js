@@ -58,7 +58,7 @@ function grounding(answer, factTexts, question = '') {
   answer = normalise(answer)
   const pool = new Set()
   for (const t of [...factTexts, question]) {
-    for (const tok of String(t).match(/\d+(?:[.,]\d+)?/g) || []) pool.add(tok.replace(',', '.'))
+    for (const tok of normalise(t).match(/\d+(?:[.,]\d+)?/g) || []) pool.add(tok.replace(',', '.'))
   }
   const poolNums = [...pool].map(Number)
   const ungrounded = []
