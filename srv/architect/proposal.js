@@ -3,10 +3,11 @@
 
 const { assess } = require('./assessment')
 const { estimate } = require('./estimator')
-const { USE_CASES } = require('./portfolio')
+const { USE_CASES, TIERS } = require('./portfolio')
 const llm = require('../agent/llm')
 const { grounding } = require('../agent/critic')
 
+const SPELLED = /\b(eleven|twelve|(?:thir|four|fif|six|seven|eigh|nine)teen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million)\b/i
 const eur = (n) => `EUR ${Math.round(n / 1000).toLocaleString('en-US')}k`
 
 async function proposal({ client = 'the client', assessmentInput = {}, useCaseIds = [], dayRate = 900, contingencyPct = 15 } = {}) {
@@ -24,12 +25,12 @@ async function proposal({ client = 'the client', assessmentInput = {}, useCaseId
     `Effort ${e.totalPersonDays} person-days including ${e.contingencyPct} % contingency, about ${e.months} months, average ${e.averageFte} FTE.`,
     `Indicative cost ${eur(e.costLowEur)} to ${eur(e.costHighEur)} at EUR ${dayRate} per day (ROM, -25 % to +25 %).`,
     `Data strategy: ${a.dataStrategy}`,
-    `Business AI use cases in scope: ${ucs.map((u) => `${u.id} ${u.title} (${u.tierName})`).join('; ') || 'none selected'}.`,
+    `Business AI use cases in scope: ${ucs.map((u) => `${u.id} ${u.title} (${TIERS[u.tier].name})`).join('; ') || 'none selected'}.`,
     `Main risks: ${a.risks.slice(0, 3).join('; ') || 'none flagged'}.`,
   ]
 
   const out = await llm.complete([
-    { role: 'system', content: 'You are a senior SAP Business AI architect writing the executive summary of a proposal for business and IT managers. Use only the FACTS. Every number must appear in FACTS exactly. 120 to 170 words, 2 short paragraphs, no headings, no bullet points, no thousands separators. Do not invent products, dates or prices.' },
+    { role: 'system', content: 'You are a senior SAP Business AI architect writing the executive summary of a proposal for business and IT managers. Use only the FACTS. Write every number in digits exactly as it appears in FACTS, never in words. 120 to 170 words, 2 short paragraphs, no headings, no bullet points, no thousands separators. Do not invent products, dates or prices.' },
     { role: 'user', content: `FACTS:\n${facts.join('\n')}` },
   ])
   const fallback = `${name} should take the ${a.label.toLowerCase()} path to SAP S/4HANA ${a.input.deployment === 'RISE_PUBLIC' ? 'Cloud Public Edition' : 'Cloud Private Edition'} under RISE with SAP. ` +
@@ -40,6 +41,8 @@ async function proposal({ client = 'the client', assessmentInput = {}, useCaseId
   let summary = fallback, provider = 'Deterministic composer', verdict = 'pass', ungrounded = []
   if (out.text) {
     const g = grounding(out.text, facts.concat(fallback))
+    const spelled = out.text.match(SPELLED)
+    if (spelled) { g.grounded = false; g.ungrounded.push(`number written as a word: ${spelled[0]}`) }
     if (g.grounded) { summary = out.text.trim(); provider = `${out.provider} (${out.model})` }
     else { verdict = 'revised'; ungrounded = g.ungrounded; provider = `${out.provider} (replaced by deterministic composer)` }
   }
@@ -54,7 +57,7 @@ async function proposal({ client = 'the client', assessmentInput = {}, useCaseId
     ...a.rules.slice(0, 6).map((r) => `- ${r.points > 0 ? '+' : ''}${r.points} ${r.path.toLowerCase()}: ${r.reason}`),
     `## RISE with SAP scope`, ...a.rise.map((r) => `- **${r.item}**: ${r.why}`),
     `## Data and analytics`, a.dataStrategy,
-    `## Business AI roadmap`, ...(ucs.length ? ucs.map((u) => `- **${u.id} ${u.title}** (${u.tierName}): ${u.sap}. KPI: ${u.kpi}. ${u.effortPd} pd.`) : ['- No use case selected yet.']),
+    `## Business AI roadmap`, ...(ucs.length ? ucs.map((u) => `- **${u.id} ${u.title}** (${TIERS[u.tier].name}): ${u.sap}. KPI: ${u.kpi}. ${u.effortPd} pd.`) : ['- No use case selected yet.']),
     `## SAP Activate roadmap`, `| Phase | Months | Key deliverables |`, `|---|---|---|`,
     ...a.roadmap.map((p) => `| ${p.phase} | ${p.months} | ${p.deliverables} |`),
     `## Effort estimate`, `| Workstream | Person-days | Driver |`, `|---|---|---|`,
